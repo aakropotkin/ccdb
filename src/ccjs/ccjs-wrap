@@ -1,0 +1,197 @@
+#! /usr/bin/env bash
+# ============================================================================ #
+#
+# Wrap `CC' to produce `compile_commands.json' as a side-effect.
+# This is similar to `bear' but does not require `LD_PRELOAD' or `llvm'.
+#
+#
+# ---------------------------------------------------------------------------- #
+
+set -eu;
+set -o pipefail;
+
+
+# ---------------------------------------------------------------------------- #
+
+_as_me="ccjs";
+
+_version="0.1.0";
+
+_usage_msg="USAGE: $_as_me [OPTIONS...] CC-ARGS...
+
+Wrap \`CC' to produce \`compile_commands.json' as a side-effect.
+";
+
+#shellcheck disable=SC2140
+_help_msg="$_usage_msg
+The environment variable \`CC' or \`CCJS_COMPILER' must be set.
+Use \`CCJS_COMPILER="\$CXX"' if you wish to compile C++ code.
+
+The environment variable \`CCJS_OUT' may be set to specify the output file,
+otherwise \`./compile_commands.json' is used.
+
+OPTIONS
+  -h,--help           Print help message to STDOUT.
+  -u,--usage          Print usage message to STDOUT.
+  -v,--version        Print version information to STDOUT.
+
+ENVIRONMENT
+  CCJS_OUT            Output file. Default: \`./compile_commands.json'.
+  CCJS_DONT_COMPILE   Do not compile, just generate \`compile_commands.json'.
+  CCJS_COMPILER       Command used as compiler executable. Defaults to \`\$CC'.
+  CCJS_SILENT         Do not print any extra messages to STDERR.
+  CC                  Command used as \`cc' executable.
+  JQ                  Command used as \`jq' executable.
+  REALPATH            Command used as \`realpath' executable.
+  MKTEMP              Command used as \`mktemp' executable.
+";
+
+
+# ---------------------------------------------------------------------------- #
+
+usage() {
+  if [[ "${1:-}" = "-f" ]]; then
+    echo "$_help_msg";
+  else
+    echo "$_usage_msg";
+  fi
+}
+
+
+# ---------------------------------------------------------------------------- #
+
+# @BEGIN_INJECT_UTILS@
+: "${CCJS_OUT:=$PWD/compile_commands.json}";
+: "${CC:=cc}";
+: "${JQ:=jq}";
+: "${REALPATH:=realpath}";
+: "${MKTEMP:=mktemp}";
+: "${CCJS_COMPILER:=$CC}";
+
+
+# ---------------------------------------------------------------------------- #
+
+declare -a tmp_files tmp_dirs;
+tmp_files=();
+tmp_dirs=();
+
+mktmp_auto() {
+  local _f;
+  _f="$( $MKTEMP "$@"; )";
+  case " $* " in
+    *\ -d\ *|*\ --directory\ *) tmp_dirs+=( "$_f" ); ;;
+    *)                          tmp_files+=( "$_f" ); ;;
+  esac
+  echo "$_f";
+}
+
+
+# ---------------------------------------------------------------------------- #
+
+cleanup() {
+  rm -f "${tmp_files[@]}";
+  rm -rf "${tmp_dirs[@]}";
+}
+
+_es=0;
+trap '_es="$?"; cleanup; exit "$_es";' HUP TERM INT QUIT EXIT;
+
+
+# ---------------------------------------------------------------------------- #
+
+_TARGET_FILE='';
+_OUTPUT_FILE='';
+
+declare -a _cc_args;
+_cc_args=();
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -h|--help) usage -f; exit 0; ;;
+    -o) _OUTPUT_FILE="$2"; _cc_args+=( '-o' ); shift; ;;
+    -*|--*) :; ;;
+    *.c|*.h|*.cc|*.cpp|*.hpp|*.cxx|*.hxx|*.c++|*.h++|*.ipp)
+      _TARGET_FILE="$1";
+    ;;
+    *) :; ;;
+  esac
+  _cc_args+=( "$1" );
+  shift;
+done
+
+
+# ---------------------------------------------------------------------------- #
+
+if [[ -n "${_TARGET_FILE}" ]]; then
+  _TARGET_FILE="$("$REALPATH" "$_TARGET_FILE"; )";
+elif [[ -z "${CCJS_SILENT:-}" ]]; then
+  {
+    echo "$_as_me: Could not determine the target file.";
+    printf '      You must use a source file with one of the ';
+    echo "following extensions:";
+    echo "      .c .h .cc .cpp .hpp .cxx .hxx .c++ .h++ .ipp";
+    echo "Falling back to normal \`$CCJS_COMPILER' invocation."
+  } >&2;
+    exec "$CCJS_COMPILER" "${_cc_args[@]}";
+fi
+
+# Users can omit `-o' if they're using `-c'.
+if [[ -n "${_OUTPUT_FILE:-}" ]]; then
+  _OUTPUT_FILE="$("$REALPATH" "$_OUTPUT_FILE"; )";
+else
+  _OUTPUT_FILE="${_TARGET_FILE#.*}.o";
+fi
+
+
+# ---------------------------------------------------------------------------- #
+
+_ARGS='';
+for _arg in "${_cc_args[@]}"; do
+  if [[ -n "$_ARGS" ]]; then
+    _ARGS="$_ARGS,";
+  fi
+  # Escape double quotes.
+  _ARGS="$_ARGS\"${_arg//\"/\\\"}\"";
+done
+
+_ENTRY="{
+  \"directory\": \"$PWD\",
+  \"file\": \"$_TARGET_FILE\",
+  \"output\": \"$_OUTPUT_FILE\",
+  \"arguments\": [$_ARGS]
+}";
+
+
+# ---------------------------------------------------------------------------- #
+
+# If the file doesn't exist create it.
+if ! [[ -f "$CCJS_OUT" ]]; then
+  echo "[$_ENTRY]" > "$CCJS_OUT";
+else
+  #shellcheck disable=SC2119
+  TMPFILE="$( mktmp_auto; )";
+
+  # Add the entry to the file, and remove old entry ( if present ).
+  $JQ --argjson _ENTRY "$_ENTRY" "[\$_ENTRY] + .|unique_by( .output )"  \
+        "$CCJS_OUT" > "$TMPFILE";
+
+  # Backup the original file.
+  mv "$CCJS_OUT" "$CCJS_OUT~";
+
+  # Overwrite the original file.
+  mv "$TMPFILE" "$CCJS_OUT";
+fi
+
+
+# ---------------------------------------------------------------------------- #
+
+if [[ -z "${CCJS_DONT_COMPILE:-}" ]]; then
+  exec "$CCJS_COMPILER" "${_cc_args[@]}";
+fi
+
+
+# ---------------------------------------------------------------------------- #
+#
+#
+#
+# ============================================================================ #
