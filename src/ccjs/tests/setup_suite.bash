@@ -99,7 +99,8 @@ ccjs_setup() {
     progs_setup;
     : "${CCJS:=$( $REALPATH "${BASH_SOURCE[0]%/*}/../main.bash"; )}";
     export CCJS;
-    print_var CCJS;
+    printf '  ' >&3;
+    print_var CCJS >&3;
   fi
   export _RAN_CCJS_SETUP=1;
 }
