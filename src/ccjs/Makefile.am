@@ -4,11 +4,19 @@
 #
 # ---------------------------------------------------------------------------- #
 
+ACLOCAL_AMFLAGS = -I ../../m4
+
+SUBDIRS =
+
+
+# ---------------------------------------------------------------------------- #
+
 bin_SCRIPTS = ccjs ccjs-wrap ccjs_add ccjs_remove
 
 
 # ---------------------------------------------------------------------------- #
 
+# TODO: `AC_PATH_PROGS' in `configure.ac'
 BATS       ?= bats
 BATSFLAGS  ?= --print-output-on-failure --verbose-run --timing
 BATS_TESTS ?= ./tests
