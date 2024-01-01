@@ -23,6 +23,5 @@ jobs:
         extra_nix_config: |
           experimental-features = nix-command flakes
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-    - run: nix flake check --system "$SYSTEM"
-    - run: nix build --system "$SYSTEM"
-    - run: nix develop -c sh -c './configure; make -j; make check';
+    - run: nix flake check --system "$SYSTEM" -L
+    - run: nix build --system "$SYSTEM" -L
