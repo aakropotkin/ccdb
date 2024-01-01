@@ -78,10 +78,10 @@ OPTIONS
   -i,--in-place     Add entry to \`compile_commands.json' in-place.
 
 ENVIRONMENT
-  CCJS_OUT            Output file. Default: \`./compile_commands.json'.
-  JQ                  Command used as \`jq' executable.
-  REALPATH            Command used as \`realpath' executable.
-  MKTEMP              Command used as \`mktemp' executable.
+  CCJS_OUT          Output file. Default: \`./compile_commands.json'.
+  JQ                Command used as \`jq' executable.
+  REALPATH          Command used as \`realpath' executable.
+  MKTEMP            Command used as \`mktemp' executable.
 ";
 
 
@@ -117,10 +117,10 @@ OPTIONS
   -i,--in-place     Add entry to \`compile_commands.json' in-place.
 
 ENVIRONMENT
-  CCJS_OUT            Output file. Default: \`./compile_commands.json'.
-  JQ                  Command used as \`jq' executable.
-  REALPATH            Command used as \`realpath' executable.
-  MKTEMP              Command used as \`mktemp' executable.
+  CCJS_OUT          Output file. Default: \`./compile_commands.json'.
+  JQ                Command used as \`jq' executable.
+  REALPATH          Command used as \`realpath' executable.
+  MKTEMP            Command used as \`mktemp' executable.
 ";
 
 
@@ -131,6 +131,51 @@ usage_remove() {
     echo "$_help_remove_msg";
   else
     echo "$_usage_remove_msg";
+  fi
+}
+
+
+# ---------------------------------------------------------------------------- #
+
+_usage_list_msg="USAGE: $_as_me [OPTIONS...] list [CMD-OPTIONS]...
+
+List entries in \`compile_commands.json'.
+";
+
+_help_list_msg="$_usage_list_msg
+Only one of \`--files', \`--outputs', or \`--directories' can be specified.
+
+Only one of \`--format', \`--lines', \`--json', or \`--tree' can be specified.
+
+OPTIONS
+  -h,--help         Print help message to STDOUT.
+  -u,--usage        Print usage message to STDOUT.
+  -s,--files        Print source file names only.
+  -o,--outputs      Print output file names only.
+  -d,--directories  Print directory names only.
+  -f,--format FMT   Print output in a given FMT ( default: lines ).
+  -l,--lines        Print output in lines format. Same as \`--format=lines'.
+  -j,--json         Print output in JSON format. Same as \`--format=json'.
+  -t,--tree         Print output in tree format. Same as \`--format=tree'.
+
+ARGUMENTS
+  FMT               Output format, being one of \`lines', \`json', or \`tree'.
+
+ENVIRONMENT
+  CCJS_OUT          Output file. Default: \`./compile_commands.json'.
+  JQ                Command used as \`jq' executable.
+  REALPATH          Command used as \`realpath' executable.
+  MKTEMP            Command used as \`mktemp' executable.
+";
+
+
+# ---------------------------------------------------------------------------- #
+
+usage_list() {
+  if [[ "${1:-}" = "-f" ]]; then
+    echo "$_help_list_msg";
+  else
+    echo "$_usage_list_msg";
   fi
 }
 
@@ -198,7 +243,7 @@ set_ccjs_out() {
     CCJS_OUT="$( "$REALPATH" "$CCJS_OUT"; )";
   else
     # Find nearest project root or `compile_commands.json' by searching "up".
-    _dir="$PWD";
+    local _dir="$PWD";
     while [[ "${_dir:-/}" != "/" ]]; do
       if [[ -f "$_dir/compile_commands.json" ]]; then
         CCJS_OUT="$_dir/compile_commands.json";
@@ -213,7 +258,6 @@ set_ccjs_out() {
       _dir="${_dir%/*}";
     done
     : "${CCJS_OUT:=$PWD/compile_commands.json}";
-    unset _dir;
     export CCJS_OUT;
   fi
 }
@@ -222,10 +266,10 @@ set_ccjs_out() {
 # ---------------------------------------------------------------------------- #
 
 ccjs_add() {
-  _IN_PLACE='';
-  _FILE='';
-  _OUTPUT='';
-  _DIRECTORY='';
+  local _IN_PLACE='';
+  local _FILE='';
+  local _OUTPUT='';
+  local _DIRECTORY='';
 
   declare -a _cc_args;
   _cc_args=();
@@ -277,13 +321,13 @@ ccjs_add() {
 
   # Create entry
 
-  _ARGS='';
+  local _ARGS='';
   for _arg in "${_cc_args[@]}"; do
     # Escape double quotes.
     _ARGS="${_ARGS:+$_ARGS, }\"${_arg//\"/\\\"}\"";
   done
 
-  _ENTRY="{
+  local _ENTRY="{
     \"directory\": \"$_DIRECTORY\",
     \"file\": \"$_FILE\",
     \"output\": \"$_OUTPUT\",
@@ -301,8 +345,9 @@ ccjs_add() {
       echo "[$_ENTRY]"|$JQ;
     fi
   else
+    local TMPFILE;
     TMPFILE="$( mktmp_auto; )";
-    _JQ_CMD="[\$_ENTRY] + .|unique_by( .output )";
+    local _JQ_CMD="[\$_ENTRY] + .|unique_by( .output )";
     if [[ -n "$_IN_PLACE" ]]; then
       # Add the entry to the file, and remove old entry ( if present ).
       $JQ --argjson _ENTRY "$_ENTRY" "$_JQ_CMD" "$CCJS_OUT" > "$TMPFILE";
@@ -320,7 +365,8 @@ ccjs_add() {
 # ---------------------------------------------------------------------------- #
 
 ccjs_remove() {
-  _IN_PLACE='';
+  local _IN_PLACE='';
+
   declare -a _files;
   _files=();
 
@@ -343,7 +389,7 @@ ccjs_remove() {
     exit 1;
   fi
 
-  _FILES='';
+  local _FILES='';
   for _file in "${_files[@]}"; do
     case "$_file" in
       /*) :; ;;
@@ -353,10 +399,11 @@ ccjs_remove() {
   done
   _FILES="[$_FILES]";
 
+  local TMPFILE;
   TMPFILE="$( mktmp_auto; )";
   #shellcheck disable=SC2016
-  _JQ_CMD='map( select( .file as $FILE|
-                        ( $_FILES|index( [$FILE] ) ) == null ) )';
+  local _JQ_CMD='map( select( .file as $FILE|
+                              ( $_FILES|index( [$FILE] ) ) == null ) )';
   if [[ -n "$_IN_PLACE" ]]; then
     # Add the entry to the file, and remove old entry ( if present ).
     $JQ --argjson _FILES "$_FILES" "$_JQ_CMD" "$CCJS_OUT" > "$TMPFILE";
@@ -367,6 +414,167 @@ ccjs_remove() {
   else
     $JQ --argjson _FILES "$_FILES" "$_JQ_CMD" "$CCJS_OUT";
   fi
+}
+
+
+# ---------------------------------------------------------------------------- #
+
+ccjs_list() {
+  local _FMT='';
+  local _ONLY='';
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      # Split short options such as `-abc' -> `-a -b -c'
+      -[^-]?*)
+        _arg="$1";
+        declare -a _args;
+        _args=();
+        shift;
+        _i=1;
+        while [[ "$_i" -lt "${#_arg}" ]]; do
+          _args+=( "-${_arg:$_i:1}" );
+          _i="$(( _i + 1 ))";
+        done
+        set -- "${_args[@]}" "$@";
+        unset _arg _args _i;
+        continue;
+      ;;
+      --*=*)
+        _arg="$1";
+        shift;
+        set -- "${_arg%%=*}" "${_arg#*=}" "$@";
+        unset _arg;
+        continue;
+      ;;
+      -u|--usage)    usage_list;    exit 0; ;;
+      -h|--help)     usage_list -f; exit 0; ;;
+      -s|--files)
+        if [[ -n "${_ONLY:-}" ]]; then
+          {
+            printf "%s list: Only one of \`--files', \`--outputs', " "$_as_me";
+            echo "\`--directories' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _ONLY='files';
+        fi
+      ;;
+      -o|--outputs)
+        if [[ -n "${_ONLY:-}" ]]; then
+          {
+            printf "%s list: Only one of \`--files', \`--outputs', " "$_as_me";
+            echo "\`--directories' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _ONLY='outputs';
+        fi
+      ;;
+      -d|--directories)
+        if [[ -n "${_ONLY:-}" ]]; then
+          {
+            printf "%s list: Only one of \`--files', \`--outputs', " "$_as_me";
+            echo "\`--directories' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _ONLY='directories';
+        fi
+      ;;
+      -f|--format)
+        if [[ -n "${_FMT:-}" ]]; then
+          {
+            printf "%s list: Only one of \`--format', \`--lines', " "$_as_me";
+            echo "\`--json', or \`--tree' can be specified";
+          } >&2;
+          exit 1;
+        else
+          shift;
+          _FMT="$1";
+        fi
+      ;;
+      -j|--json)
+        if [[ -n "${_FMT:-}" ]]; then
+          {
+            printf "%s list: Only one of \`--format', \`--lines', " "$_as_me";
+            echo "\`--json', or \`--tree' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _FMT='json';
+        fi
+      ;;
+      -l|--lines)
+        if [[ -n "${_FMT:-}" ]]; then
+          {
+            printf "%s list: Only one of \`--format', \`--lines', " "$_as_me";
+            echo "\`--json', or \`--tree' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _FMT='lines';
+        fi
+      ;;
+      -t|--tree)
+        if [[ -n "${_FMT:-}" ]]; then
+          {
+            printf "%s list: Only one of \`--format', \`--lines', " "$_as_me";
+            echo "\`--json', or \`--tree' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _FMT='tree';
+        fi
+      ;;
+      *)
+        echo "$_as_me list: Unexpected argument(s) '$*'" >&2;
+        usage -f >&2;
+        exit 1;
+      ;;
+    esac
+    shift;
+  done
+
+  : "${_FMT:=lines}";
+
+  if [[ -n "${_ONLY:-}" ]] && [[ "$_FMT" = "tree" ]]; then
+    {
+      printf "%s list: \`--tree' is incompatible with \`--files', " "$_as_me";
+      echo "\`--outputs', or \`--directories'";
+    } >&2;
+    exit 1;
+  fi
+
+  local _JQ_CMD_lines='map( .file + " -> " + .output )|.[]';
+  #shellcheck disable=SC2016
+  local _JQ_CMD_lines_only='map( .[$_FIELD] )|unique|.[]';
+  local _JQ_CMD_json='.';
+  #shellcheck disable=SC2016
+  local _JQ_CMD_json_only='map( .[$_FIELD] )|unique';
+  #shellcheck disable=SC2016
+  local _JQ_CMD_tree='map(
+    .directory as $DIR
+    |( .file|=sub( "^" + $DIR + "/"; ""; "" ) )
+    |( .output|=sub( "^" + $DIR + "/"; ""; "" ) )
+   )|group_by( .directory )
+    |map( .[0].directory as $DIR
+          |( map( .file|length )|max ) as $MAX_LEN
+          |map( until( ( .file|length ) == $MAX_LEN; .file += " " ) )
+          |$DIR + "\n" + ( map( "  " + .file + " -> " + .output )|join( "\n" ) )
+        )|join( "\n" )';
+
+  local _JQ_CMD;
+  eval _JQ_CMD=\""\$_JQ_CMD_$_FMT"${_ONLY:+_only}\";
+
+  local _FIELD;
+  case "${_ONLY:-files}" in
+    files)       _FIELD='file'; ;;
+    outputs)     _FIELD='output'; ;;
+    directories) _FIELD='directory'; ;;
+    *)           _FIELD='file'; ;;
+  esac
+
+  $JQ -r --arg _FIELD "$_FIELD" "$_JQ_CMD" "$CCJS_OUT";
 }
 
 
@@ -420,6 +628,12 @@ while [[ "$#" -gt 0 ]]; do
       shift;
       set_ccjs_out;
       ccjs_remove "$@";
+      exit "$?";
+    ;;
+    list)
+      shift;
+      set_ccjs_out;
+      ccjs_list "$@";
       exit "$?";
     ;;
     *)
