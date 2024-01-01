@@ -258,11 +258,6 @@ ccjs_add() {
 
   # Get absolute paths.
 
-  case "${CCJS_OUT:=$PWD/compile_commands.json}" in
-    /*) :; ;;
-    *) CCJS_OUT="$( "$REALPATH" "$CCJS_OUT"; )"; ;;
-  esac
-
   case "$_FILE" in
     "") echo "$_as_me: Missing FILE argument." >&2; usage_add >&2; exit 1; ;;
     /*) :; ;;
@@ -341,11 +336,6 @@ ccjs_remove() {
 
 
   # Get absolute paths.
-
-  case "${CCJS_OUT:=$PWD/compile_commands.json}" in
-    /*) :; ;;
-    *) CCJS_OUT="$( "$REALPATH" "$CCJS_OUT"; )"; ;;
-  esac
 
   if [[ -z "${_files[*]}" ]]; then
     echo "$_as_me: no input files were given" >&2;
