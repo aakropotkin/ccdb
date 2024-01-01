@@ -1,9 +1,14 @@
-{ stdenv, lib, autoreconfHook, jq, gawk }:
-stdenv.mkDerivation {
+{ stdenv, lib, autoreconfHook, jq, bats }: let
+  batsWith = bats.withLibraries (p: [
+    p.bats-assert
+    p.bats-file
+    p.bats-support
+  ]);
+in stdenv.mkDerivation {
   pname = "ccdb";
   src = builtins.path { path = ./.; };
   version = "0.1.0";
-  nativeBuildInputs = [autoreconfHook];
-  depsTargetTarget = [gawk];
+  nativeBuildInputs = [autoreconfHook batsWith];
+  buildInputs = [jq];
   meta.license = lib.licenses.gpl3;
 }
