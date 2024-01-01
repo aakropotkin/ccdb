@@ -182,6 +182,44 @@ usage_list() {
 
 # ---------------------------------------------------------------------------- #
 
+_usage_show_msg="USAGE: $_as_me [OPTIONS...] show [CMD-OPTIONS]...  \
+FILE-OR-OUTPUT...
+
+Show an entry in \`compile_commands.json'.
+";
+
+_help_show_msg="$_usage_show_msg
+
+OPTIONS
+  -h,--help         Print help message to STDOUT.
+  -u,--usage        Print usage message to STDOUT.
+  -s,--file         Print source file name only.
+  -o,--output       Print output file name only.
+  -d,--directory    Print directory name only.
+  -a,--args         Print arguments only.
+  -j,--json         Print output in JSON format.
+
+ENVIRONMENT
+  CCJS_OUT          Output file. Default: \`./compile_commands.json'.
+  JQ                Command used as \`jq' executable.
+  REALPATH          Command used as \`realpath' executable.
+  MKTEMP            Command used as \`mktemp' executable.
+";
+
+
+# ---------------------------------------------------------------------------- #
+
+usage_show() {
+  if [[ "${1:-}" = "-f" ]]; then
+    echo "$_help_show_msg";
+  else
+    echo "$_usage_show_msg";
+  fi
+}
+
+
+# ---------------------------------------------------------------------------- #
+
 # @BEGIN_INJECT_UTILS@
 : "${JQ:=jq}";
 : "${REALPATH:=realpath}";
@@ -580,6 +618,146 @@ ccjs_list() {
 
 # ---------------------------------------------------------------------------- #
 
+ccjs_show() {
+  local _FILE='';
+  local _FMT='lines';
+  local _ONLY='';
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      # Split short options such as `-abc' -> `-a -b -c'
+      -[^-]?*)
+        _arg="$1";
+        declare -a _args;
+        _args=();
+        shift;
+        _i=1;
+        while [[ "$_i" -lt "${#_arg}" ]]; do
+          _args+=( "-${_arg:$_i:1}" );
+          _i="$(( _i + 1 ))";
+        done
+        set -- "${_args[@]}" "$@";
+        unset _arg _args _i;
+        continue;
+      ;;
+      --*=*)
+        _arg="$1";
+        shift;
+        set -- "${_arg%%=*}" "${_arg#*=}" "$@";
+        unset _arg;
+        continue;
+      ;;
+      -u|--usage)    usage_show;    exit 0; ;;
+      -h|--help)     usage_show -f; exit 0; ;;
+      -s|--files)
+        if [[ -n "${_ONLY:-}" ]]; then
+          {
+            printf "%s show: Only one of \`--file', \`--output', " "$_as_me";
+            echo "\`--directory', or \`--args' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _ONLY='file';
+        fi
+      ;;
+      -o|--output)
+        if [[ -n "${_ONLY:-}" ]]; then
+          {
+            printf "%s show: Only one of \`--file', \`--output', " "$_as_me";
+            echo "\`--directory', or \`--args' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _ONLY='output';
+        fi
+      ;;
+      -d|--directory)
+        if [[ -n "${_ONLY:-}" ]]; then
+          {
+            printf "%s show: Only one of \`--file', \`--output', " "$_as_me";
+            echo "\`--directory', or \`--args' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _ONLY='directory';
+        fi
+      ;;
+      -a|--arguments)
+        if [[ -n "${_ONLY:-}" ]]; then
+          {
+            printf "%s show: Only one of \`--file', \`--output', " "$_as_me";
+            echo "\`--directory', or \`--args' can be specified";
+          } >&2;
+          exit 1;
+        else
+          _ONLY='arguments';
+        fi
+      ;;
+      -j|--json) _FMT='json'; ;;
+      *)
+        if [[ -z "${_FILE:-}" ]]; then
+          _FILE="$1";
+        else
+          echo "$_as_me show: Unexpected argument(s) '$*'" >&2;
+          usage -f >&2;
+          exit 1;
+        fi
+      ;;
+    esac
+    shift;
+  done
+
+  : "${_FMT:=lines}";
+
+  if [[ -z "${_ONLY:-}" ]]; then
+    if [[ "$_FMT" = 'json' ]]; then
+      #shellcheck disable=SC2016
+      $JQ -r --arg _FILE "$_FILE"                                           \
+        'map( select( ( .file == $_FILE ) or ( .output == $_FILE ) ) )[0]'  \
+        "$CCJS_OUT";
+    else
+      #shellcheck disable=SC2016
+      $JQ -r --arg _FILE "$_FILE"                                          \
+        'map( select( ( .file == $_FILE ) or ( .output == $_FILE ) ) )[0]
+         |["file:      \( .file )",
+           "output:    \( .output )",
+           "directory: \( .directory )",
+           ( "arguments: \"" + ( .arguments|map( sub( "\""; "\\\""; "g" ) )
+                                 |join( "\" \"" ) ) + "\"" )
+          ]|join( "\n" )' "$CCJS_OUT";
+    fi
+    return "$?";
+  fi
+
+  local _FIELD;
+  case "${_ONLY:-file}" in
+    file|output|directory)
+      #shellcheck disable=SC2016
+      $JQ -r --arg _FILE "$_FILE" --arg _FIELD "$_ONLY"                    \
+        'map( select( ( .file == $_FILE ) or ( .output == $_FILE ) ) )[0]
+         |.[$_FILED]' "$CCJS_OUT";
+    ;;
+    arguments)
+      if [[ "$_FMT" = 'json' ]]; then
+        #shellcheck disable=SC2016
+        $JQ -r --arg _FILE "$_FILE"                                          \
+          'map( select( ( .file == $_FILE ) or ( .output == $_FILE ) ) )[0]
+           |.arguments' "$CCJS_OUT";
+      else
+        #shellcheck disable=SC2016
+        $JQ -r --arg _FILE "$_FILE"                                          \
+          'map( select( ( .file == $_FILE ) or ( .output == $_FILE ) ) )[0]
+           |"\"" + ( .arguments|map( sub( "\""; "\\\""; "g" ) )
+                     |join( "\" \"" ) ) + "\""' "$CCJS_OUT";
+      fi
+      return "$?";
+    ;;
+  esac
+
+}
+
+
+# ---------------------------------------------------------------------------- #
+
 # Parse "global" options up until the first sub-command name.
 
 while [[ "$#" -gt 0 ]]; do
@@ -634,6 +812,12 @@ while [[ "$#" -gt 0 ]]; do
       shift;
       set_ccjs_out;
       ccjs_list "$@";
+      exit "$?";
+    ;;
+    show)
+      shift;
+      set_ccjs_out;
+      ccjs_show "$@";
       exit "$?";
     ;;
     *)
