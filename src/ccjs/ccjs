@@ -28,7 +28,7 @@ OPTIONS
   -v,--version        Print version information to STDOUT.
 
 COMMANDS
-  add FILE FLAGS      Add entry to \`compile_commands.json'.
+  add FILE -- FLAGS   Add entry to \`compile_commands.json'.
   remove FILE         Remove entries from \`compile_commands.json'.
   list                List all entries in \`compile_commands.json'.
   show FILE           Show entry from \`compile_commands.json'.
