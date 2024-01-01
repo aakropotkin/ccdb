@@ -78,8 +78,8 @@ progs_setup() {
     : "${FIND:=find}";
 
     _bats_test_progs+=(
-      MKDIR MKDIR_P REALPATH RM TEST TRUE FALSE JQ REALPATH MKTEMP GREP SED SORT
-      TR WC XARGS FIND
+      MKDIR MKDIR_P REALPATH RM TEST JQ REALPATH MKTEMP GREP SED SORT TR WC
+      XARGS FIND
     );
 
     for prog in "${_bats_test_progs[@]}"; do
