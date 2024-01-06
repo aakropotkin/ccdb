@@ -25,4 +25,4 @@ jobs:
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
     - run: nix flake check --system "$SYSTEM" -L
     - run: nix build --system "$SYSTEM" -L
-    - run: nix develop -c sh -c 'make -j all && make check'
+    - run: nix develop -c sh -c 'make -j && make check'
