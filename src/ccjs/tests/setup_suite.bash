@@ -97,7 +97,7 @@ progs_setup() {
 ccjs_setup() {
   if [[ -z "${_RAN_CCJS_SETUP:-}" ]]; then
     progs_setup;
-    : "${CCJS:=$( $REALPATH "${BASH_SOURCE[0]%/*}/../main.bash"; )}";
+    : "${CCJS:=$( $REALPATH "${BASH_SOURCE[0]%/*}/../ccjs"; )}";
     export CCJS;
     printf '  ' >&3;
     print_var CCJS >&3;
