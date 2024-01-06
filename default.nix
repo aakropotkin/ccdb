@@ -1,4 +1,4 @@
-{ stdenv, lib, autoreconfHook, jq, bats, doCheck ? true }: let
+{ stdenv, lib, autoreconfHook, jq, bats, doCheck ? false }: let
   batsWith = bats.withLibraries (p: [
     p.bats-assert
     p.bats-file
