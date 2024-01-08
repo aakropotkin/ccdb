@@ -40,7 +40,7 @@ AC_CONFIG_FILES([
   src/Makefile
   src/ccjs/Makefile
   src/ccjs/bin/Makefile
-  src/ccjs/libexec/Makefile
+  src/ccjs/lib/Makefile
   src/ccjs/tests/Makefile
 ])
 AC_OUTPUT

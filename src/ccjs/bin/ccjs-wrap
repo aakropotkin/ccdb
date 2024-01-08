@@ -67,34 +67,26 @@ usage() {
 : "${REALPATH:=realpath}";
 : "${MKTEMP:=mktemp}";
 : "${CCJS_COMPILER:=$CC}";
+# @END_INJECT_UTILS@
 
 
 # ---------------------------------------------------------------------------- #
 
-declare -a tmp_files tmp_dirs;
-tmp_files=();
-tmp_dirs=();
+# Load helper scripts
 
-mktmp_auto() {
-  local _f;
-  _f="$( $MKTEMP "$@"; )";
-  case " $* " in
-    *\ -d\ *|*\ --directory\ *) tmp_dirs+=( "$_f" ); ;;
-    *)                          tmp_files+=( "$_f" ); ;;
-  esac
-  echo "$_f";
-}
+if [[ -z "${_ccdb_LIBPATH:-}" ]]; then
+  if [[ -d "${BASH_SOURCE[0]%/bin/*}/lib/ccdb" ]]; then
+    _ccdb_LIBPATH="${BASH_SOURCE[0]%/bin/*}/lib/ccdb";
+  elif [[ -d "${BASH_SOURCE[0]%/bin/*}/lib" ]]; then
+    _ccdb_LIBPATH="${BASH_SOURCE[0]%/bin/*}/lib";
+  else
+    echo "$_as_me: failed to locate helper scripts" >&2;
+    exit 1;
+  fi
+fi
+export _ccdb_LIBPATH;
 
-
-# ---------------------------------------------------------------------------- #
-
-cleanup() {
-  rm -f "${tmp_files[@]}";
-  rm -rf "${tmp_dirs[@]}";
-}
-
-_es=0;
-trap '_es="$?"; cleanup; exit "$_es";' HUP TERM INT QUIT EXIT;
+source "$_ccdb_LIBPATH/mktmp_auto.bash";
 
 
 # ---------------------------------------------------------------------------- #

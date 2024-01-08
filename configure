@@ -5358,7 +5358,7 @@ fi
 
 # ---------------------------------------------------------------------------- #
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/ccjs/Makefile src/ccjs/bin/Makefile src/ccjs/libexec/Makefile src/ccjs/tests/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/ccjs/Makefile src/ccjs/bin/Makefile src/ccjs/lib/Makefile src/ccjs/tests/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6105,7 +6105,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/ccjs/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/Makefile" ;;
     "src/ccjs/bin/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/bin/Makefile" ;;
-    "src/ccjs/libexec/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/libexec/Makefile" ;;
+    "src/ccjs/lib/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/lib/Makefile" ;;
     "src/ccjs/tests/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/tests/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
