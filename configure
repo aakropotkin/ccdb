@@ -616,7 +616,7 @@ PACKAGE_STRING='ccdb 0.1.0'
 PACKAGE_BUGREPORT='alex.ameen.tx@gmail.com'
 PACKAGE_URL=''
 
-ac_unique_file="src/ccjs/ccjs"
+ac_unique_file="README.md"
 ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
@@ -5358,7 +5358,7 @@ fi
 
 # ---------------------------------------------------------------------------- #
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/ccjs/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/ccjs/Makefile src/ccjs/bin/Makefile src/ccjs/libexec/Makefile src/ccjs/tests/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6104,6 +6104,9 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/ccjs/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/Makefile" ;;
+    "src/ccjs/bin/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/bin/Makefile" ;;
+    "src/ccjs/libexec/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/libexec/Makefile" ;;
+    "src/ccjs/tests/Makefile") CONFIG_FILES="$CONFIG_FILES src/ccjs/tests/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

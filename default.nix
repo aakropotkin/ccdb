@@ -6,7 +6,28 @@
   ]);
 in stdenv.mkDerivation {
   pname = "ccdb";
-  src = builtins.path { path = ./.; };
+  src = builtins.path { 
+    path = ./.; 
+    filter = path: type: let
+      bname = baseNameOf path;
+      ignoredBNames = [
+        "Makefile" 
+	"configure" 
+	"config.status" 
+	"result" 
+	"out"
+        "autom4te.cache" 
+	".github"
+      ];
+      bNameOkay = ! ( builtins.elem bname ignoredBNames );
+      ignoredPatterns = [
+        ".*~" ".*\\.log"
+      ];
+      test = patt: str: ( builtins.match patt str ) != null;
+      patternsOkay = 
+        builtins.all ( patt: ! ( test patt path ) ) ignoredPatterns;
+    in bNameOkay && patternsOkay;
+  };
   version = "0.1.0";
   nativeBuildInputs = [autoreconfHook batsWith];
   buildInputs = [jq];

@@ -13,7 +13,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
-AC_CONFIG_SRCDIR([src/ccjs/ccjs])
+AC_CONFIG_SRCDIR([README.md])
 
 
 # ---------------------------------------------------------------------------- #
@@ -39,6 +39,9 @@ AC_CONFIG_FILES([
   Makefile
   src/Makefile
   src/ccjs/Makefile
+  src/ccjs/bin/Makefile
+  src/ccjs/libexec/Makefile
+  src/ccjs/tests/Makefile
 ])
 AC_OUTPUT
 

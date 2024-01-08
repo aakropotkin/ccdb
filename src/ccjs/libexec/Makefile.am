@@ -4,15 +4,14 @@
 #
 # ---------------------------------------------------------------------------- #
 
-ACLOCAL_AMFLAGS = -I ../../m4
+ACLOCAL_AMFLAGS = -I ../../../m4
 
-SUBDIRS = bin tests
+SUBDIRS =
+
 
 # ---------------------------------------------------------------------------- #
 
-CCJS      ?= $(abs_builddir)/bin/ccjs
-CCJS_WRAP ?= $(abs_builddir)/bin/ccjs-wrap
-export CCJS CCJS_WRAP
+libexec_SCRIPTS =
 
 
 # ---------------------------------------------------------------------------- #

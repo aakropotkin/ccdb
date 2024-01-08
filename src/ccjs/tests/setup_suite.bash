@@ -97,10 +97,12 @@ progs_setup() {
 ccjs_setup() {
   if [[ -z "${_RAN_CCJS_SETUP:-}" ]]; then
     progs_setup;
-    : "${CCJS:=$( $REALPATH "${BASH_SOURCE[0]%/*}/../ccjs"; )}";
-    export CCJS;
+    : "${CCJS:=$( $REALPATH "${BASH_SOURCE[0]%/*}/../bin/ccjs"; )}";
+    : "${CCJS_WRAP:=$( $REALPATH "${BASH_SOURCE[0]%/*}/../bin/ccjs-wrap"; )}";
+    export CCJS CCJS_WRAP;
     printf '  ' >&3;
     print_var CCJS >&3;
+    print_var CCJS_WRAP >&3;
   fi
   export _RAN_CCJS_SETUP=1;
 }
